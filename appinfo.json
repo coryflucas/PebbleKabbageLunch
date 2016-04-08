@@ -1,0 +1,26 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "craig.d.alexander@gmail.com",
+    "enableMultiJS": true,
+    "longName": "Kabbage Lunch",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "sdkVersion": "3",
+    "shortName": "Kabbage Lunch",
+    "targetPlatforms": [
+        "aplite",
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "2f6bab76-390b-477d-886c-d44b7969f33a",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "hiddenApp": true,
+        "watchface": false
+    }
+}
