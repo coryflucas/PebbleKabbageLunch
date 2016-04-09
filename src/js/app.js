@@ -1,7 +1,7 @@
 Pebble.addEventListener('ready', function(e) {
-  Pebble.timelineSubscribe('KabbageLunches', 
+  Pebble.timelineSubscribe('KabbageLunch', 
     function () { 
-      console.log('Subscribed to KabbageLunches');
+      console.log('Subscribed to KabbageLunch');
     }, 
     function (errorString) { 
       console.log('Error subscribing to topic: ' + errorString);

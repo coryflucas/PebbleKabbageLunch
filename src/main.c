@@ -6,13 +6,14 @@ TextLayer *text_layer;
 void handle_init(void) {
   my_window = window_create();
   Layer *window_layer = window_get_root_layer(my_window);
-  text_layer = text_layer_create(GRect(0, 0, 144, 144));
-  text_layer_set_text(text_layer, "Kabbage lunches are now on your timeline.");
+  text_layer = text_layer_create(GRect(3, 30, 141, 114));
+  text_layer_set_text(text_layer, "Kabbage lunches are now available on your timeline.");
+  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
-  
-  #if PBL_ROUND
   text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
-  text_layer_enable_screen_text_flow_and_paging(text_layer, 8);
+
+  #if PBL_ROUND
+    text_layer_enable_screen_text_flow_and_paging(text_layer, 12);
   #endif
   
   window_stack_push(my_window, true);
