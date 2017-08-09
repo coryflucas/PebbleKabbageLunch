@@ -3,6 +3,7 @@
 //
 
 #include "lunch_menu_item_layer.h"
+
 #define DATE_TEXT_LENGTH 12
 
 struct LunchMenuItemLayer {
@@ -11,6 +12,7 @@ struct LunchMenuItemLayer {
     TextLayer *menu_text_layer;
     time_t date;
     char *date_text;
+    char *menu_text;
 };
 
 static void update_date_text(LunchMenuItemLayer *lunch_menu_item_layer) {
@@ -50,6 +52,9 @@ void lunch_menu_item_layer_destroy(LunchMenuItemLayer *lunch_menu_item_layer) {
     if (lunch_menu_item_layer->date_text) {
         free(lunch_menu_item_layer->date_text);
     }
+    if (lunch_menu_item_layer->menu_text) {
+        free(lunch_menu_item_layer->menu_text);
+    }
     free(lunch_menu_item_layer);
 }
 
@@ -71,8 +76,14 @@ const char *lunch_menu_item_layer_get_menu(LunchMenuItemLayer *lunch_menu_item_l
     return text_layer_get_text(lunch_menu_item_layer->menu_text_layer);
 }
 
-void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text) {
-    text_layer_set_text(lunch_menu_item_layer->menu_text_layer, menu_text);
+void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text, uint16_t menu_length) {
+    char *old_menu_text = lunch_menu_item_layer->menu_text;
+    lunch_menu_item_layer->menu_text = malloc(menu_length);
+    strncpy(lunch_menu_item_layer->menu_text, menu_text, menu_length);
+    text_layer_set_text(lunch_menu_item_layer->menu_text_layer, lunch_menu_item_layer->menu_text);
+    if (old_menu_text) {
+        free(old_menu_text);
+    }
 }
 
 void lunch_menu_item_layer_mark_dirty(LunchMenuItemLayer *lunch_menu_item_layer) {

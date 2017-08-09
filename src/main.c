@@ -97,7 +97,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Got lunch menu: %s", menu_tuple->value->cstring);
         //current_menu_item->menu = malloc(menu_tuple->length);
         //strncpy(current_menu_item->menu, menu_tuple->value->cstring, menu_tuple->length);
-        lunch_menu_item_layer_set_menu(lunch_menu_item_layer, menu_tuple->value->cstring);
+        lunch_menu_item_layer_set_menu(lunch_menu_item_layer, menu_tuple->value->cstring, menu_tuple->length);
     }
 }
 
@@ -106,7 +106,7 @@ static void inbox_dropped_handler(AppMessageResult reason, void *context) {
 }
 
 static void outbox_failed_handler(DictionaryIterator *iter, AppMessageResult reason, void *context) {
-    //APP_LOG(APP_LOG_LEVEL_ERROR, "Message send failed. Reason: %d", (int) reason);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Message send failed. Reason: %d", (int) reason);
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {

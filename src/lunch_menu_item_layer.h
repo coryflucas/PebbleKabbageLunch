@@ -22,7 +22,7 @@ void lunch_menu_item_layer_set_date(LunchMenuItemLayer *lunch_menu_item_layer, t
 
 const char *lunch_menu_item_layer_get_menu(LunchMenuItemLayer *lunch_menu_item_layer);
 
-void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text);
+void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text, uint16_t menu_length);
 
 void lunch_menu_item_layer_mark_dirty(LunchMenuItemLayer *lunch_menu_item_layer);
 
