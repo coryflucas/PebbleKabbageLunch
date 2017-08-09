@@ -1,17 +1,18 @@
 #include <pebble.h>
-
-static Window *my_window;
-static Layer *wrapper_layers[2];
-static TextLayer *menu_text_layers[2];
-static TextLayer *date_text_layers[2];
-static char date_texts[2][12];
-static char menu_texts[2][500];
-
-static int active_layer_index = 0;
-static time_t selected_date;
+#include "lunch_menu_item_layer.h"
 
 const uint32_t inbox_size = 512;
 const uint32_t outbox_size = 32;
+
+typedef enum {
+    AnimateDirectionNone,
+    AnimateDirectionForward,
+    AnimateDirectionBack
+} AnimateDirection;
+
+
+static Window *window;
+static LunchMenuItemLayer *lunch_menu_item_layer;
 
 static time_t get_next_week_day(time_t date) {
     tm *time = gmtime(&date);
@@ -41,22 +42,7 @@ static time_t get_prev_week_day(time_t date) {
     return result;
 }
 
-static char *get_date_string(time_t date) {
-    static char s_buffer[11];
-    struct tm *time = gmtime(&date);
-    strftime(s_buffer, sizeof(s_buffer), "%F", time);
-    return &s_buffer[0];
-}
-
-static int get_active_layer_index() {
-    return active_layer_index;
-}
-
-static int get_inactive_layer_index() {
-    return (active_layer_index + 1) % 2;
-}
-
-static void toggle_active_layer() {
+/*static void toggle_active_layer() {
     Layer *layer = wrapper_layers[get_active_layer_index()];
     GRect original_bounds = layer_get_bounds(layer);
     GPoint original_point = original_bounds.origin;
@@ -76,26 +62,21 @@ static void toggle_active_layer() {
     animation_schedule(spawn);
 
     active_layer_index = get_inactive_layer_index();
+}*/
+
+static char *get_request_date_string(time_t date) {
+    static char s_buffer[11];
+    //struct tm *time = gmtime(&date);
+    strftime(s_buffer, sizeof(s_buffer), "%F", gmtime(&date));
+    return &s_buffer[0];
 }
 
-void set_selected_date(time_t date) {
-    selected_date = date;
-
-    int i = get_active_layer_index();
-    struct tm *time = gmtime(&date);
-    strftime(date_texts[i], sizeof(date_texts[i]), "%a, %b %e", time);
-    text_layer_set_text(date_text_layers[get_active_layer_index()], date_texts[i]);
-}
-
-void request_lunch(time_t date) {
-    toggle_active_layer();
-    set_selected_date(date);
-    text_layer_set_text(menu_text_layers[get_active_layer_index()], "Loading...");
-
+static void request_lunch(time_t date, AnimateDirection direction) {
+    lunch_menu_item_layer_set_date(lunch_menu_item_layer, date);
     DictionaryIterator *out_iter;
     AppMessageResult result = app_message_outbox_begin(&out_iter);
     if (result == APP_MSG_OK) {
-        dict_write_cstring(out_iter, MESSAGE_KEY_LUNCH_DATE, get_date_string(date));
+        dict_write_cstring(out_iter, MESSAGE_KEY_LUNCH_DATE, get_request_date_string(date));
         result = app_message_outbox_send();
         if (result != APP_MSG_OK) {
             APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int) result);
@@ -106,17 +87,17 @@ void request_lunch(time_t date) {
 }
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
-    Tuple *ready = dict_find(iter, MESSAGE_KEY_JS_READY);
-    Tuple *menu = dict_find(iter, MESSAGE_KEY_LUNCH_MENU);
-    if (ready) {
+    Tuple *ready_tuple = dict_find(iter, MESSAGE_KEY_JS_READY);
+    Tuple *menu_tuple = dict_find(iter, MESSAGE_KEY_LUNCH_MENU);
+    if (ready_tuple) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Phone reports JS is ready");
-        request_lunch(get_next_week_day(time_start_of_today()));
+        request_lunch(get_next_week_day(time_start_of_today()), AnimateDirectionNone);
         return;
-    } else if (menu) {
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Got lunch menu: %s", menu->value->cstring);
-        int i = get_active_layer_index();
-        strncpy(menu_texts[i], menu->value->cstring, sizeof(menu_texts[1]));
-        text_layer_set_text(menu_text_layers[i], menu_texts[i]);
+    } else if (menu_tuple) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Got lunch menu: %s", menu_tuple->value->cstring);
+        //current_menu_item->menu = malloc(menu_tuple->length);
+        //strncpy(current_menu_item->menu, menu_tuple->value->cstring, menu_tuple->length);
+        lunch_menu_item_layer_set_menu(lunch_menu_item_layer, menu_tuple->value->cstring);
     }
 }
 
@@ -125,19 +106,17 @@ static void inbox_dropped_handler(AppMessageResult reason, void *context) {
 }
 
 static void outbox_failed_handler(DictionaryIterator *iter, AppMessageResult reason, void *context) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Message send failed. Reason: %d", (int) reason);
-}
-
-static void outbox_sent_handler(DictionaryIterator *iter, void *context) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Message sent, size: %d", iter->cursor->length);
+    //APP_LOG(APP_LOG_LEVEL_ERROR, "Message send failed. Reason: %d", (int) reason);
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    request_lunch(get_prev_week_day(selected_date - SECONDS_PER_DAY));
+    time_t current_date = lunch_menu_item_layer_get_date(lunch_menu_item_layer);
+    request_lunch(get_prev_week_day(current_date - SECONDS_PER_DAY), AnimateDirectionBack);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    request_lunch(get_next_week_day(selected_date + SECONDS_PER_DAY));
+    time_t current_date = lunch_menu_item_layer_get_date(lunch_menu_item_layer);
+    request_lunch(get_next_week_day(current_date + SECONDS_PER_DAY), AnimateDirectionForward);
 }
 
 static void click_config_provider(void *context) {
@@ -150,52 +129,21 @@ void handle_init(void) {
     app_message_register_inbox_received(inbox_received_handler);
     app_message_register_inbox_dropped(inbox_dropped_handler);
     app_message_register_outbox_failed(outbox_failed_handler);
-    app_message_register_outbox_sent(outbox_sent_handler);
 
-    my_window = window_create();
-    window_set_click_config_provider(my_window, click_config_provider);
-    Layer *window_layer = window_get_root_layer(my_window);
+    window = window_create();
+    window_set_click_config_provider(window, click_config_provider);
+    Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
-    BitmapLayer *bitmap_layer = bitmap_layer_create(bounds);
-    bitmap_layer_set_background_color(bitmap_layer, GColorPurple);
-    layer_add_child(window_layer, bitmap_layer_get_layer(bitmap_layer));
+    lunch_menu_item_layer = lunch_menu_item_layer_create(bounds);
+    layer_add_child(window_layer, lunch_menu_item_layer_get_layer(lunch_menu_item_layer));
 
-    for(int i = 0; i < 2; i++) {
-        Layer *wrapper_layer = layer_create(bounds);
-        layer_add_child(window_layer, wrapper_layer);
-        wrapper_layers[i] = wrapper_layer;
-
-        TextLayer *menu_text_layer = text_layer_create(GRect(0, 30, bounds.size.w, bounds.size.h - 30));
-        text_layer_set_font(menu_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(menu_text_layer, GTextAlignmentCenter);
-        layer_add_child(wrapper_layer, text_layer_get_layer(menu_text_layer));
-        menu_text_layers[i] = menu_text_layer;
-
-        TextLayer *date_text_layer = text_layer_create(GRect(0, 0, bounds.size.w, 30));
-        text_layer_set_font(date_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(date_text_layer, GTextAlignmentCenter);
-        layer_add_child(wrapper_layer, text_layer_get_layer(date_text_layer));
-        date_text_layers[i] = date_text_layer;
-    }
-
-    text_layer_set_text(menu_text_layers[get_active_layer_index()], "Loading...");
-
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "active index: %d, inactive index: %d", get_active_layer_index(), get_inactive_layer_index());
-
-    GRect off_screen_bounds = GRect(bounds.origin.x, bounds.origin.y - bounds.size.h, bounds.size.w, bounds.size.h);
-    layer_set_bounds(wrapper_layers[get_inactive_layer_index()], off_screen_bounds);
-
-    window_stack_push(my_window, true);
+    window_stack_push(window, true);
 }
 
 void handle_deinit(void) {
-    for(int i = 0; i < 2; i++) {
-        text_layer_destroy(date_text_layers[i]);
-        text_layer_destroy(menu_text_layers[i]);
-        layer_destroy(wrapper_layers[i]);
-    }
-    window_destroy(my_window);
+    lunch_menu_item_layer_destroy(lunch_menu_item_layer);
+    window_destroy(window);
 }
 
 int main(void) {
