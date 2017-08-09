@@ -3,6 +3,7 @@
 //
 
 #include "lunch_menu_item_layer.h"
+#define DATE_TEXT_LENGTH 12
 
 struct LunchMenuItemLayer {
     Layer *wrapper_layer;
@@ -13,13 +14,13 @@ struct LunchMenuItemLayer {
 };
 
 static void update_date_text(LunchMenuItemLayer *lunch_menu_item_layer) {
-    strftime(lunch_menu_item_layer->date_text, 12, "%a, %b %e", gmtime(&lunch_menu_item_layer->date));
+    strftime(lunch_menu_item_layer->date_text, DATE_TEXT_LENGTH, "%a, %b %e", gmtime(&lunch_menu_item_layer->date));
 }
 
 LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
     LunchMenuItemLayer *self = malloc(sizeof(LunchMenuItemLayer));
 
-    self->date_text = malloc(sizeof(char) * 12);
+    self->date_text = malloc(sizeof(char) * DATE_TEXT_LENGTH);
 
     self->wrapper_layer = layer_create(frame);
 
