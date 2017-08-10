@@ -10,7 +10,6 @@ typedef enum {
     AnimateDirectionBack
 } AnimateDirection;
 
-
 static Window *window;
 static LunchMenuItemLayer *lunch_menu_item_layer;
 
@@ -42,37 +41,77 @@ static time_t get_prev_week_day(time_t date) {
     return result;
 }
 
-/*static void toggle_active_layer() {
-    Layer *layer = wrapper_layers[get_active_layer_index()];
-    GRect original_bounds = layer_get_bounds(layer);
-    GPoint original_point = original_bounds.origin;
-
-    GPoint off_screen_bottom = GPoint(original_bounds.origin.x, original_bounds.origin.y + original_bounds.size.h);
-    PropertyAnimation *prop_anim_a = property_animation_create_bounds_origin(layer, NULL, &off_screen_bottom);
-    Animation *animation_a = property_animation_get_animation(prop_anim_a);
-    animation_set_duration(animation_a, 200);
-
-    layer = wrapper_layers[get_inactive_layer_index()];
-    GPoint off_screen_top = GPoint(original_bounds.origin.x, original_bounds.origin.y - original_bounds.size.h);
-    PropertyAnimation *prop_anim_b = property_animation_create_bounds_origin(layer, &off_screen_top, &original_point);
-    Animation *animation_b = property_animation_get_animation(prop_anim_b);
-    animation_set_duration(animation_b, 200);
-
-    Animation *spawn = animation_spawn_create(animation_a, animation_b, NULL);
-    animation_schedule(spawn);
-
-    active_layer_index = get_inactive_layer_index();
-}*/
-
 static char *get_request_date_string(time_t date) {
     static char s_buffer[11];
-    //struct tm *time = gmtime(&date);
     strftime(s_buffer, sizeof(s_buffer), "%F", gmtime(&date));
     return &s_buffer[0];
 }
 
+static void new_menu_item_anim_started_handler(Animation *animation, void *context) {
+    // once the animation starts, add to the window. Adding before would make it flash on top of the old menu item
+    LunchMenuItemLayer *new_lunch_menu_item_layer = context;
+    layer_add_child(window_get_root_layer(window), lunch_menu_item_layer_get_layer(new_lunch_menu_item_layer));
+}
+
+static void old_menu_item_anim_stopped_handler(Animation *animation, bool finished, void *context) {
+    // after animation complete, destroy old menu item
+    if(finished) {
+        LunchMenuItemLayer *old_lunch_menu_item_layer = context;
+        layer_remove_from_parent(lunch_menu_item_layer_get_layer(old_lunch_menu_item_layer));
+        lunch_menu_item_layer_destroy(old_lunch_menu_item_layer);
+    }
+}
+
 static void request_lunch(time_t date, AnimateDirection direction) {
-    lunch_menu_item_layer_set_date(lunch_menu_item_layer, date);
+    LunchMenuItemLayer *old_lunch_menu_item_layer = lunch_menu_item_layer;
+
+    Layer *window_layer = window_get_root_layer(window);
+    GRect bounds = layer_get_bounds(window_layer);
+
+    LunchMenuItemLayer *new_lunch_menu_item_layer = lunch_menu_item_layer_create(bounds);
+    lunch_menu_item_layer_set_date(new_lunch_menu_item_layer, date);
+    lunch_menu_item_layer_set_menu(new_lunch_menu_item_layer, "loading", 8);
+    lunch_menu_item_layer = new_lunch_menu_item_layer;
+
+    if (direction != AnimateDirectionNone) {
+        int slide_in_offset = direction == AnimateDirectionForward ? bounds.size.h : -bounds.size.h;
+
+        // animate new item slide in
+        GPoint end = bounds.origin;
+        GPoint start = GPoint(bounds.origin.x, bounds.origin.y + slide_in_offset);
+        PropertyAnimation *new_prop_animation = property_animation_create_bounds_origin(
+                lunch_menu_item_layer_get_layer(new_lunch_menu_item_layer),
+                &start,
+                &end);
+        Animation *new_animation = property_animation_get_animation(new_prop_animation);
+        animation_set_duration(new_animation, 250);
+        animation_set_handlers(new_animation, (AnimationHandlers) {
+                .started = new_menu_item_anim_started_handler
+        }, new_lunch_menu_item_layer);
+
+        // animate old item slide out
+        start = bounds.origin;
+        end = GPoint(bounds.origin.x, bounds.origin.y - slide_in_offset);
+        PropertyAnimation *old_prop_animation = property_animation_create_bounds_origin(
+                lunch_menu_item_layer_get_layer(old_lunch_menu_item_layer),
+                &start,
+                &end);
+        Animation *old_animation = property_animation_get_animation(old_prop_animation);
+        animation_set_duration(old_animation, 250);
+        animation_set_handlers(old_animation, (AnimationHandlers) {
+                .stopped = old_menu_item_anim_stopped_handler
+        }, old_lunch_menu_item_layer);
+
+        animation_schedule(animation_spawn_create(new_animation, old_animation, NULL));
+    } else {
+        // this is handled in animation callbacks when animated
+        layer_add_child(window_get_root_layer(window), lunch_menu_item_layer_get_layer(new_lunch_menu_item_layer));
+        if (old_lunch_menu_item_layer) {
+            layer_remove_from_parent(lunch_menu_item_layer_get_layer(old_lunch_menu_item_layer));
+            lunch_menu_item_layer_destroy(old_lunch_menu_item_layer);
+        }
+    }
+
     DictionaryIterator *out_iter;
     AppMessageResult result = app_message_outbox_begin(&out_iter);
     if (result == APP_MSG_OK) {
@@ -95,8 +134,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
         return;
     } else if (menu_tuple) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Got lunch menu: %s", menu_tuple->value->cstring);
-        //current_menu_item->menu = malloc(menu_tuple->length);
-        //strncpy(current_menu_item->menu, menu_tuple->value->cstring, menu_tuple->length);
         lunch_menu_item_layer_set_menu(lunch_menu_item_layer, menu_tuple->value->cstring, menu_tuple->length);
     }
 }
@@ -132,11 +169,6 @@ void handle_init(void) {
 
     window = window_create();
     window_set_click_config_provider(window, click_config_provider);
-    Layer *window_layer = window_get_root_layer(window);
-    GRect bounds = layer_get_bounds(window_layer);
-
-    lunch_menu_item_layer = lunch_menu_item_layer_create(bounds);
-    layer_add_child(window_layer, lunch_menu_item_layer_get_layer(lunch_menu_item_layer));
 
     window_stack_push(window, true);
 }
