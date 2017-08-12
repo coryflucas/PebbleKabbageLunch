@@ -5,6 +5,7 @@
 #include "lunch_menu_item_layer.h"
 
 #define DATE_TEXT_LENGTH 12
+#define ROUND_MARGIN 6
 
 struct LunchMenuItemLayer {
     Layer *wrapper_layer;
@@ -46,11 +47,22 @@ static void wrapper_update_proc(Layer *layer, GContext *ctx) {
     graphics_fill_rect(ctx, bounds, 0, GCornerNone);
     graphics_context_set_compositing_mode(ctx, GCompOpSet);
     GRect bitmap_bounds = gbitmap_get_bounds(background_bitmap);
-    bitmap_bounds.origin.x = bounds.size.w - bitmap_bounds.size.w - 2;
     bitmap_bounds.origin.y = bounds.size.h - bitmap_bounds.size.h - 2;
+#ifdef PBL_ROUND
+    bitmap_bounds.origin.x = bounds.size.w / 2 - bitmap_bounds.size.w / 2;
+#else
+    bitmap_bounds.origin.x = bounds.size.w - bitmap_bounds.size.w - 2;
+#endif // PBL_ROUND
     graphics_draw_bitmap_in_rect(ctx, background_bitmap, bitmap_bounds);
+#endif // PBL_COLOR
+
+    int hr_margin = 4;
+    int hr_y = 23;
+#ifdef PBL_ROUND
+    hr_margin += 30;
+    hr_y += ROUND_MARGIN;
 #endif
-    graphics_draw_line(ctx, GPoint(4, 23), GPoint(bounds.size.w - 4, 23));
+    graphics_draw_line(ctx, GPoint(hr_margin, hr_y), GPoint(bounds.size.w - hr_margin, hr_y));
 }
 
 LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
@@ -60,6 +72,10 @@ LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
 
     self->wrapper_layer = layer_create(frame);
     layer_set_update_proc(self->wrapper_layer, wrapper_update_proc);
+
+#ifdef PBL_ROUND
+    frame = grect_inset(frame, GEdgeInsets(ROUND_MARGIN));
+#endif
 
     GRect date_text_layer_bounds = frame;
     date_text_layer_bounds.size.h = 22;
@@ -76,7 +92,7 @@ LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
     GRect menu_text_layer_bounds = frame;
     menu_text_layer_bounds.origin.y = 24;
     menu_text_layer_bounds.size.h -= 24;
-    menu_text_layer_bounds = grect_inset(menu_text_layer_bounds, GEdgeInsets3(0, 4, 4));
+    menu_text_layer_bounds = grect_inset(menu_text_layer_bounds, GEdgeInsets3(0, PBL_IF_ROUND_ELSE(18, 4), 4));
     self->menu_text_layer = text_layer_create(menu_text_layer_bounds);
     text_layer_set_font(self->menu_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_background_color(self->menu_text_layer, GColorClear);
