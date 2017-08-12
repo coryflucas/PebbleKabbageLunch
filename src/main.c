@@ -167,6 +167,8 @@ void handle_init(void) {
     app_message_register_inbox_dropped(inbox_dropped_handler);
     app_message_register_outbox_failed(outbox_failed_handler);
 
+    lunch_menu_item_layer_initialize();
+
     window = window_create();
     window_set_click_config_provider(window, click_config_provider);
 
@@ -176,6 +178,7 @@ void handle_init(void) {
 void handle_deinit(void) {
     lunch_menu_item_layer_destroy(lunch_menu_item_layer);
     window_destroy(window);
+    lunch_menu_item_layer_deinitialize();
 }
 
 int main(void) {

@@ -10,6 +10,12 @@
 struct LunchMenuItemLayer;
 typedef struct LunchMenuItemLayer LunchMenuItemLayer;
 
+// Initialize shared resources. Must be called before using any LunchMenuItemLayers.
+void lunch_menu_item_layer_initialize();
+
+// Release shared resources.
+void lunch_menu_item_layer_deinitialize();
+
 LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame);
 
 void lunch_menu_item_layer_destroy(LunchMenuItemLayer *lunch_menu_item_layer);

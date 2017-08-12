@@ -15,9 +15,26 @@ struct LunchMenuItemLayer {
     char *menu_text;
 };
 
+#ifdef PBL_COLOR
+static GBitmap *background_bitmap;
+#endif
+
+void lunch_menu_item_layer_initialize() {
+#ifdef PBL_COLOR
+    background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_LOGO);
+#endif
+}
+
+void lunch_menu_item_layer_deinitialize() {
+#ifdef PBL_COLOR
+    gbitmap_destroy(background_bitmap);
+#endif
+}
+
 static void update_date_text(LunchMenuItemLayer *lunch_menu_item_layer) {
     strftime(lunch_menu_item_layer->date_text, DATE_TEXT_LENGTH, "%a, %b %e", gmtime(&lunch_menu_item_layer->date));
 }
+
 static void wrapper_update_proc(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
 
@@ -27,6 +44,11 @@ static void wrapper_update_proc(Layer *layer, GContext *ctx) {
 
     bounds.origin = GPoint(0, 0);
     graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    GRect bitmap_bounds = gbitmap_get_bounds(background_bitmap);
+    bitmap_bounds.origin.x = bounds.size.w - bitmap_bounds.size.w - 2;
+    bitmap_bounds.origin.y = bounds.size.h - bitmap_bounds.size.h - 2;
+    graphics_draw_bitmap_in_rect(ctx, background_bitmap, bitmap_bounds);
 #endif
     graphics_draw_line(ctx, GPoint(4, 23), GPoint(bounds.size.w - 4, 23));
 }
