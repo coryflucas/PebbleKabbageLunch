@@ -18,6 +18,18 @@ struct LunchMenuItemLayer {
 static void update_date_text(LunchMenuItemLayer *lunch_menu_item_layer) {
     strftime(lunch_menu_item_layer->date_text, DATE_TEXT_LENGTH, "%a, %b %e", gmtime(&lunch_menu_item_layer->date));
 }
+static void wrapper_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+
+#ifdef PBL_COLOR
+    graphics_context_set_fill_color(ctx, GColorDarkGreen);
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+
+    bounds.origin = GPoint(0, 0);
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+#endif
+    graphics_draw_line(ctx, GPoint(4, 23), GPoint(bounds.size.w - 4, 23));
+}
 
 LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
     LunchMenuItemLayer *self = calloc(1, sizeof(LunchMenuItemLayer));
@@ -25,22 +37,31 @@ LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
     self->date_text = calloc(DATE_TEXT_LENGTH, sizeof(char));
 
     self->wrapper_layer = layer_create(frame);
+    layer_set_update_proc(self->wrapper_layer, wrapper_update_proc);
 
     GRect date_text_layer_bounds = frame;
     date_text_layer_bounds.size.h = 22;
     self->date_text_layer = text_layer_create(date_text_layer_bounds);
-    text_layer_set_font(self->date_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+    text_layer_set_font(self->date_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
     text_layer_set_text_alignment(self->date_text_layer, GTextAlignmentCenter);
     text_layer_set_text(self->date_text_layer, self->date_text);
+    text_layer_set_background_color(self->date_text_layer, GColorClear);
+#ifdef PBL_COLOR
+    text_layer_set_text_color(self->date_text_layer, GColorWhite);
+#endif
     layer_add_child(self->wrapper_layer, text_layer_get_layer(self->date_text_layer));
 
     GRect menu_text_layer_bounds = frame;
     menu_text_layer_bounds.origin.x = 4;
-    menu_text_layer_bounds.origin.y = 22;
+    menu_text_layer_bounds.origin.y = 24;
     menu_text_layer_bounds.size.w -= 8;
-    menu_text_layer_bounds.size.h -= 24;
+    menu_text_layer_bounds.size.h -= 28;
     self->menu_text_layer = text_layer_create(menu_text_layer_bounds);
     text_layer_set_font(self->menu_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_background_color(self->menu_text_layer, GColorClear);
+#ifdef PBL_COLOR
+    text_layer_set_text_color(self->menu_text_layer, GColorWhite);
+#endif
     layer_add_child(self->wrapper_layer, text_layer_get_layer(self->menu_text_layer));
 
     return self;
