@@ -74,10 +74,9 @@ LunchMenuItemLayer *lunch_menu_item_layer_create(GRect frame) {
     layer_add_child(self->wrapper_layer, text_layer_get_layer(self->date_text_layer));
 
     GRect menu_text_layer_bounds = frame;
-    menu_text_layer_bounds.origin.x = 4;
     menu_text_layer_bounds.origin.y = 24;
-    menu_text_layer_bounds.size.w -= 8;
-    menu_text_layer_bounds.size.h -= 28;
+    menu_text_layer_bounds.size.h -= 24;
+    menu_text_layer_bounds = grect_inset(menu_text_layer_bounds, GEdgeInsets3(0, 4, 4));
     self->menu_text_layer = text_layer_create(menu_text_layer_bounds);
     text_layer_set_font(self->menu_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_background_color(self->menu_text_layer, GColorClear);
