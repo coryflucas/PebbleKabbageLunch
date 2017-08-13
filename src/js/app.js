@@ -1,8 +1,8 @@
-var lunchApiBaseUrl = "http://lunch.kabbage.com/api/v2"
+var lunchApiBaseUrl = 'http://lunch.kabbage.com/api/v2'
 
 var sendMenu = function(menu) {
     Pebble.sendAppMessage({
-        "LUNCH_MENU": menu
+        'LUNCH_MENU': menu
     });
 };
 
@@ -27,7 +27,7 @@ var fetchLunch = function(date, menuCallback) {
         }
     };
 
-    request.open("GET", lunchApiBaseUrl + "/lunches/" + date);
+    request.open('GET', lunchApiBaseUrl + '/lunches/' + date);
     request.send()
 }
 
@@ -47,7 +47,7 @@ Pebble.addEventListener('ready', function (e) {
         var dict = e.payload;
 
         if(dict['LUNCH_DATE']) {
-            var date = dict["LUNCH_DATE"];
+            var date = dict['LUNCH_DATE'];
             fetchLunch(date, sendMenu);
         }
     });
