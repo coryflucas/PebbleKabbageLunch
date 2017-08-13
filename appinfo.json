@@ -15,6 +15,12 @@
         "media": [
             {
                 "type": "bitmap",
+                "name": "APP_ICON",
+                "file": "icon.png",
+                "menuIcon": true
+            },
+            {
+                "type": "bitmap",
                 "name": "BACKGROUND_LOGO",
                 "file": "background-logo.png",
                 "targetPlatforms": [
