@@ -75,19 +75,29 @@ static void request_lunch(time_t date, AnimateDirection direction) {
 
     if (direction != AnimateDirectionNone) {
         int slide_in_offset = direction == AnimateDirectionForward ? bounds.size.h : -bounds.size.h;
+        int bounce_offset = direction == AnimateDirectionForward ? -5 : 5;
 
         // animate new item slide in
-        GPoint end = bounds.origin;
+        GPoint end = GPoint(bounds.origin.x, bounds.origin.y + bounce_offset);
         GPoint start = GPoint(bounds.origin.x, bounds.origin.y + slide_in_offset);
-        PropertyAnimation *new_prop_animation = property_animation_create_bounds_origin(
+        PropertyAnimation *new_prop_animation1 = property_animation_create_bounds_origin(
                 lunch_menu_item_layer_get_layer(new_lunch_menu_item_layer),
                 &start,
                 &end);
-        Animation *new_animation = property_animation_get_animation(new_prop_animation);
-        animation_set_duration(new_animation, 250);
-        animation_set_handlers(new_animation, (AnimationHandlers) {
+        Animation *new_animation1 = property_animation_get_animation(new_prop_animation1);
+        animation_set_duration(new_animation1, 250);
+        animation_set_handlers(new_animation1, (AnimationHandlers) {
                 .started = new_menu_item_anim_started_handler
         }, new_lunch_menu_item_layer);
+
+        PropertyAnimation *new_prop_animation2 = property_animation_create_bounds_origin(
+                lunch_menu_item_layer_get_layer(new_lunch_menu_item_layer),
+                &end,
+                &bounds.origin);
+        Animation *new_animation2 = property_animation_get_animation(new_prop_animation2);
+        animation_set_duration(new_animation2, 100);
+
+        Animation *new_animation = animation_sequence_create(new_animation1, new_animation2, NULL);
 
         // animate old item slide out
         start = bounds.origin;
@@ -170,6 +180,9 @@ void handle_init(void) {
     lunch_menu_item_layer_initialize();
 
     window = window_create();
+#ifdef PBL_COLOR
+    window_set_background_color(window, GColorDarkGreen);
+#endif
     window_set_click_config_provider(window, click_config_provider);
 
     window_stack_push(window, true);
