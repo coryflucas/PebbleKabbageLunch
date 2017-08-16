@@ -26,10 +26,6 @@ time_t lunch_menu_item_layer_get_date(LunchMenuItemLayer *lunch_menu_item_layer)
 
 void lunch_menu_item_layer_set_date(LunchMenuItemLayer *lunch_menu_item_layer, time_t date);
 
-const char *lunch_menu_item_layer_get_menu(LunchMenuItemLayer *lunch_menu_item_layer);
-
 void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text, uint16_t menu_length);
-
-void lunch_menu_item_layer_mark_dirty(LunchMenuItemLayer *lunch_menu_item_layer);
 
 #endif //PEBBLEKABBAGELUNCH_LUNCH_MENU_ITEM_LAYER_H

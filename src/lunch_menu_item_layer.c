@@ -131,10 +131,6 @@ void lunch_menu_item_layer_set_date(LunchMenuItemLayer *lunch_menu_item_layer, t
     layer_mark_dirty(text_layer_get_layer(lunch_menu_item_layer->date_text_layer));
 }
 
-const char *lunch_menu_item_layer_get_menu(LunchMenuItemLayer *lunch_menu_item_layer) {
-    return lunch_menu_item_layer->menu_text;
-}
-
 void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, char *menu_text, uint16_t menu_length) {
     char *old_menu_text = lunch_menu_item_layer->menu_text;
     lunch_menu_item_layer->menu_text = malloc(menu_length);
@@ -143,10 +139,4 @@ void lunch_menu_item_layer_set_menu(LunchMenuItemLayer *lunch_menu_item_layer, c
     if (old_menu_text) {
         free(old_menu_text);
     }
-}
-
-void lunch_menu_item_layer_mark_dirty(LunchMenuItemLayer *lunch_menu_item_layer) {
-    update_date_text(lunch_menu_item_layer);
-    layer_mark_dirty(text_layer_get_layer(lunch_menu_item_layer->date_text_layer));
-    layer_mark_dirty(text_layer_get_layer(lunch_menu_item_layer->menu_text_layer));
 }
