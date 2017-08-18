@@ -12,6 +12,9 @@ typedef enum {
 
 static Window *window;
 static LunchMenuItemLayer *lunch_menu_item_layer;
+#ifdef PBL_COLOR
+static GBitmap *background_bitmap;
+#endif
 
 static time_t get_next_week_day(time_t date) {
     tm *time = gmtime(&date);
@@ -171,6 +174,24 @@ static void click_config_provider(void *context) {
     window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
+#ifdef PBL_COLOR
+static void window_layer_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    bounds.origin = GPoint(0, 0);
+    GRect bitmap_bounds = gbitmap_get_bounds(background_bitmap);
+    bitmap_bounds.origin.y = bounds.size.h - bitmap_bounds.size.h - 2;
+#ifdef PBL_ROUND
+    bitmap_bounds.origin.x = bounds.size.w / 2 - bitmap_bounds.size.w / 2;
+#else
+    bitmap_bounds.origin.x = bounds.size.w - bitmap_bounds.size.w - 2;
+#endif // PBL_ROUND
+    graphics_context_set_fill_color(ctx, GColorDarkGreen);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+    graphics_draw_bitmap_in_rect(ctx, background_bitmap, bitmap_bounds);
+}
+#endif // PBL_COLOR
+
 void handle_init(void) {
     app_message_open(inbox_size, outbox_size);
     app_message_register_inbox_received(inbox_received_handler);
@@ -181,7 +202,10 @@ void handle_init(void) {
 
     window = window_create();
 #ifdef PBL_COLOR
+    background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_LOGO);
     window_set_background_color(window, GColorDarkGreen);
+    Layer *window_layer = window_get_root_layer(window);
+    layer_set_update_proc(window_layer, window_layer_update_proc);
 #endif
     window_set_click_config_provider(window, click_config_provider);
 
